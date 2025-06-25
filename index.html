@@ -16,7 +16,9 @@
 <body>
   <main class="container" style="margin-top: 5%">
     <h1>Daggerheart Encounter builder</h1>
-  <a data-tooltip="James' Github repo for this project" href="https://github.com/Gensokian/DH-Encounter-Calculator">Github repo</a> - <a data-tooltip="Direct contact to James" href="https://discord.com/users/216647648801718272">Discord contact</a>
+    <a data-tooltip="James' Github repo for this project"
+      href="https://github.com/Gensokian/DH-Encounter-Calculator">Github repo</a> - <a
+      data-tooltip="Direct contact to James" href="https://discord.com/users/216647648801718272">Discord contact</a>
     <hr>
     <article class="container-fluid">
       <div class="container-fluid">
@@ -66,9 +68,7 @@
           <legend><b>Adversaries:</b></legend>
         </fieldset>
 
-
         <input type="button" onclick="addRow()" class="outline" value="Add Adversary!" />
-
 
         <p id="calcTable"></p>
 
@@ -79,23 +79,11 @@
     <hr>
     <article class="container-fluid">
       <div class="container-fluid">
-
         <table>
           <thead>
-            <!-- OPTIONAL Numbers... but looks silly on mobile
-             <td>
-              Nr
-            </td>
-             -->
-            <td>
-              Name
-            </td>
-            <td>
-              Hp
-            </td>
-            <td>
-              St
-            </td>
+            <td>Name</td>
+            <td>Hp</td>
+            <td>St</td>
           </thead>
           <tbody id="combatTrackerBody">
           </tbody>
@@ -124,17 +112,28 @@
   <script>
     let rIndex = 0;
 
+    // Defines the cost, HP, and Stress for each adversary type.
+    const ADVERSARY_DATA = {
+      "MINION": { cost: 1, hp: 8, stress: 4 }, // Cost adjusted per "group equal to party size"
+      "SOCIAL": { cost: 1, hp: 8, stress: 4 },
+      "SUPPORT": { cost: 1, hp: 4, stress: 2 },
+      "HORDE": { cost: 2, hp: 6, stress: 3 },
+      "RANGED": { cost: 2, hp: 6, stress: 3 },
+      "SKULKS": { cost: 2, hp: 4, stress: 2 }, // Adjusted from 1 to 2 based on your description
+      "STANDARD": { cost: 2, hp: 6, stress: 3 },
+      "LEADER": { cost: 3, hp: 12, stress: 6 }, // Adjusted from 5 to 3
+      "BRUISER": { cost: 4, hp: 10, stress: 5 },
+      "SOLO": { cost: 5, hp: 15, stress: 8 }
+    };
+
     function addRow() {
       const monsterTable = document.getElementById("monsterTable");
-
       const currentIndex = rIndex;
 
-      // Create a container for the new row of inputs
       const row = document.createElement("fieldset");
       row.setAttribute("role", "group");
       row.id = `row${currentIndex}`;
 
-      // Create the input fields
       const nameInput = document.createElement("input");
       nameInput.type = "text";
       nameInput.name = `tName${currentIndex}`;
@@ -146,6 +145,7 @@
       amountInput.placeholder = "Amount";
       amountInput.min = "1";
       amountInput.value = "1";
+      amountInput.addEventListener('input', calcStuff); // Add event listener here
 
       const tierInput = document.createElement("input");
       tierInput.type = "number";
@@ -154,31 +154,27 @@
       tierInput.min = "1";
       tierInput.max = "4";
       tierInput.value = "1";
+      tierInput.addEventListener('input', calcStuff); // Add event listener here
 
       const typeinput = document.createElement("select");
       typeinput.name = `sType${currentIndex}`;
-
-      const options = ["BRUISER", "HORDE", "LEADER", "MINION", "RANGED", "SKULKS", "SOCIAL", "SOLO", "STANDARD", "SUPPORT"];
-
-      options.forEach(value => {
+      for (const type in ADVERSARY_DATA) {
         const opt = document.createElement("option");
-        opt.value = value;
-        opt.innerHTML = value;
+        opt.value = type;
+        opt.innerHTML = type;
         typeinput.appendChild(opt);
-      });
+      }
       typeinput.value = "STANDARD";
+      typeinput.addEventListener('change', calcStuff); // Add event listener here
 
-      // Create the remove button for this specific row
       const removeButton = document.createElement("input");
       removeButton.type = "button";
       removeButton.className = "secondary";
       removeButton.value = "X";
-      // When this specific button is clicked, it will call remRow with its own index.
       removeButton.onclick = function () {
         remRow(currentIndex);
       };
 
-      // Add all the new elements to the row container
       row.appendChild(nameInput);
       row.appendChild(amountInput);
       row.appendChild(tierInput);
@@ -188,14 +184,11 @@
       monsterTable.appendChild(row);
 
       rIndex++;
-
       calcStuff();
     }
 
-    // This function removes a specific row by its unique ID
     function remRow(i) {
       const rowToRemove = document.getElementById("row" + i);
-      // Check if the element exists before trying to remove it
       if (rowToRemove) {
         rowToRemove.remove();
         calcStuff();
@@ -205,42 +198,40 @@
     }
 
     window.onload = function () {
-      // First row is on the house :)
-      addRow();
+      addRow(); // Add the first row on load
 
+      // Attach a single 'change' and 'input' event listener to the monsterTable
+      // This is more efficient than adding individual listeners to each input in addRow
       const monsterTable = document.getElementById("monsterTable");
-
-      // Attach a single 'change' event listener to the monsterTable
       monsterTable.addEventListener('change', function (event) {
-        if (event.target.matches('input[name^="tName"], input[name^="nCount"], input[name^="nTier"], select[name^="sType"]')) {
+        if (event.target.matches('select[name^="sType"]')) {
           calcStuff();
         }
       });
-    }
+      monsterTable.addEventListener('input', function (event) {
+        if (event.target.matches('input[name^="tName"], input[name^="nCount"], input[name^="nTier"]')) {
+          calcStuff();
+        }
+      });
+    };
 
-
-    /* Function */
     function calcStuff() {
-      // Get the toggle checkboxes
       const showInfoToggle = document.getElementById("showCalculationInfoToggle");
       const calcTableElement = document.getElementById("calcTable");
       const stickyPointsInfoElement = document.getElementById("stickyPointsInfo");
       const combatTrackerBody = document.getElementById("combatTrackerBody");
 
-      // Clear existing combat tracker rows
-      combatTrackerBody.innerHTML = '';
+      combatTrackerBody.innerHTML = ''; // Clear existing combat tracker rows
 
-      // The Calculogic
-
-      var players = document.querySelector('input[name="nPlayers"]').value;
-      var initialPoints = players * 3 + 2;
+      const players = parseInt(document.querySelector('input[name="nPlayers"]').value, 10) || 0;
+      let initialPoints = players * 3 + 2;
 
       const partyTierInput = document.querySelector('input[name="nPartyTier"]');
       const partyTierValue = partyTierInput ? parseInt(partyTierInput.value, 10) : 1;
 
       let totalMonsterCost = 0;
       let lowerTierMonsterDetected = false;
-      let specialMonsterDetected = false;
+      let specialMonsterDetected = false; // Will be set to true if any special monster type is found
       let soloMonsterCount = 0;
 
       const monsterTable = document.getElementById("monsterTable");
@@ -256,38 +247,38 @@
 
         if (currentMonsterTypeSelect && currentMonsterAmountInput && currentMonsterTierInput && currentMonsterNameInput) {
           const currentMonsterType = currentMonsterTypeSelect.value;
-          const currentMonsterAmount = parseInt(currentMonsterAmountInput.value, 10);
-          const currentMonsterTier = parseInt(currentMonsterTierInput.value, 10);
+          const currentMonsterAmount = parseInt(currentMonsterAmountInput.value, 10) || 0;
+          const currentMonsterTier = parseInt(currentMonsterTierInput.value, 10) || 1;
           const currentMonsterName = currentMonsterNameInput.value || "Unnamed Adversary";
 
-          let monsterCost = 0;
-          let hp = 0;
-          let stress = 0;
+          // Get cost, HP, and Stress from ADVERSARY_DATA
+          const adversaryData = ADVERSARY_DATA[currentMonsterType] || { cost: 0, hp: 0, stress: 0 };
+          const monsterCost = adversaryData.cost;
+          const hp = adversaryData.hp;
+          const stress = adversaryData.stress;
 
-          let costForThisMonster = monsterCost * currentMonsterAmount;
+          totalMonsterCost += monsterCost * currentMonsterAmount;
 
           if (currentMonsterTier < partyTierValue) {
             lowerTierMonsterDetected = true;
           }
 
-          totalMonsterCost += costForThisMonster;
+          // Check for special monster types for the "+1 if no special monsters" rule
+          if (["BRUISER", "HORDE", "LEADER", "SOLO"].includes(currentMonsterType)) {
+            specialMonsterDetected = true;
+          }
+
+          if (currentMonsterType === "SOLO") {
+            soloMonsterCount += currentMonsterAmount;
+          }
 
           // Add monsters to the combat tracker
           for (let i = 0; i < currentMonsterAmount; i++) {
             const combatRow = document.createElement("tr");
 
-            /* OPTIONAL Number Column
-
-            const nrCell = document.createElement("td");
-            nrCell.textContent = combatTrackerMonsterIndex++;
-            combatRow.appendChild(nrCell);
-            */
-
             const nameCell = document.createElement("td");
-
-            const prefixes = ["Abandoned", "Able", "Absolute", "Academic", "Acceptable", "Acclaimed", "Accomplished", "Accurate", "Aching", "Acidic", "Acrobatic", "Active", "Actual", "Adept", "Admirable", "Admired", "Adolescent", "Adorable", "Adored", "Advanced", "Adventurous", "Affectionate", "Afraid", "Aged", "Aggravating", "Aggressive", "Agile", "Agitated", "Agonizing", "Agreeable", "Ajar", "Alarmed", "Alarming", "Alert", "Alienated", "Alive", "Altruistic", "Amazing", "Ambitious", "Ample", "Amused", "Amusing", "Anchored", "Ancient", "Angelic", "Angry", "Anguished", "Animated", "Annual", "Another", "Antique", "Anxious", "Apprehensive", "Appropriate", "Apt", "Arctic", "Arid", "Aromatic", "Artistic", "Ashamed", "Assured", "Astonishing", "Athletic", "Attached", "Attentive", "Attractive", "Austere", "Authentic", "Authorized", "Automatic", "Avaricious", "Average", "Aware", "Awesome", "Awful", "Awkward", "Babyish", "Back", "Bad", "Baggy", "Bare", "Barren", "Basic", "Beautiful", "Belated", "Beloved", "Beneficial", "Best", "Better", "Bewitched", "Big", "Big-hearted", "Biodegradable", "Bite-sized", "Bitter", "Black", "Black-and-white", "Bland", "Blank", "Blaring", "Bleak", "Blind", "Blissful", "Blond", "Blue", "Blushing", "Bogus", "Boiling", "Bold", "Bony", "Boring", "Bossy", "Bouncy", "Bountiful", "Bowed", "Brave", "Breakable", "Brief", "Bright", "Brilliant", "Brisk", "Broken", "Bronze", "Brown", "Bruised", "Bubbly", "Bulky", "Bumpy", "Buoyant", "Burdensome", "Burly", "Bustling", "Busy", "Buttery", "Buzzing", "Calculating", "Calm", "Candid", "Canine", "Capital", "Carefree", "Careful", "Careless", "Caring", "Cautious", "Cavernous", "Celebrated", "Charming", "Cheap", "Cheerful", "Cheery", "Chief", "Chilly", "Chubby", "Circular", "Classic", "Clean", "Clear", "Clear-cut", "Clever", "Close", "Closed", "Cloudy", "Clueless", "Clumsy", "Cluttered", "Coarse", "Cold", "Colorful", "Colorless", "Colossal", "Comfortable", "Common", "Compassionate", "Competent", "Complete", "Complex", "Complicated", "Composed", "Concerned", "Concrete", "Confused", "Conscious", "Considerate", "Constant", "Content", "Conventional", "Cooked", "Cool", "Cooperative", "Coordinated", "Corny", "Corrupt", "Costly", "Courageous", "Courteous", "Crafty", "Crazy", "Creamy", "Creative", "Creepy", "Criminal", "Crisp", "Critical", "Crooked", "Crowded", "Cruel", "Crushing", "Cuddly", "Cultivated", "Cultured", "Cumbersome", "Curly", "Curvy", "Cute", "Cylindrical", "Damaged", "Damp", "Dangerous", "Dapper", "Daring", "Dark", "Darling", "Dazzling", "Dead", "Deadly", "Deafening", "Dear", "Dearest", "Decent", "Decimal", "Decisive", "Deep", "Defenseless", "Defensive", "Defiant", "Deficient", "Definite", "Definitive", "Delayed", "Delectable", "Delicious", "Delightful", "Delirious", "Demanding", "Dense", "Dental", "Dependable", "Dependent", "Descriptive", "Deserted", "Detailed", "Determined", "Devoted", "Different", "Difficult", "Digital", "Diligent", "Dim", "Dimpled", "Dimwitted", "Direct", "Dirty", "Disastrous", "Discrete", "Disfigured", "Disguised", "Disgusting", "Dishonest", "Disloyal", "Dismal", "Distant", "Distinct", "Distorted", "Dizzy", "Dopey", "Doting", "Double", "Downright", "Drab", "Drafty", "Dramatic", "Dreary", "Droopy", "Dry", "Dual", "Dull", "Dutiful", "Eager", "Early", "Earnest", "Easy", "Easy-going", "Ecstatic", "Edible", "Educated", "Elaborate", "Elastic", "Elated", "Elderly", "Electric", "Elegant", "Elementary", "Elliptical", "Embarrassed", "Embellished", "Eminent", "Emotional", "Empty", "Enchanted", "Enchanting", "Energetic", "Enlightened", "Enormous", "Enraged", "Entire", "Envious", "Equal", "Equatorial", "Essential", "Esteemed", "Ethical", "Euphoric", "Even", "Evergreen", "Everlasting", "Evil", "Exalted", "Excellent", "Excitable", "Excited", "Exciting", "Exemplary", "Exhausted", "Exotic", "Expensive", "Experienced", "Expert", "Extra-large", "Extra-small", "Extraneous", "Extroverted", "Fabulous", "Failing", "Faint", "Fair", "Faithful", "Fake", "False", "Familiar", "Famous", "Fancy", "Fantastic", "Far", "Far-flung", "Far-off", "Faraway", "Fast", "Fat", "Fatal", "Fatherly", "Favorable", "Favorite", "Fearful", "Fearless", "Feisty", "Feline", "Female", "Feminine", "Few", "Fickle", "Filthy", "Fine", "Finished", "Firm", "First", "Firsthand", "Fitting", "Fixed", "Flaky", "Flamboyant", "Flashy", "Flat", "Flawed", "Flawless", "Flickering", "Flimsy", "Flippant", "Flowery", "Fluffy", "Fluid", "Flustered", "Focused", "Fond", "Foolhardy", "Foolish", "Forceful", "Forked", "Formal", "Forsaken", "Forthright", "Fortunate", "Fragrant", "Frail", "Frank", "Frayed", "Free", "French", "Frequent", "Fresh", "Friendly", "Frightened", "Frightening", "Frigid", "Frilly", "Frivolous", "Frizzy", "Front", "Frosty", "Frozen", "Frugal", "Fruitful", "Full", "Fumbling", "Functional", "Funny", "Fussy", "Fuzzy", "Gargantuan", "Gaseous", "General", "Generous", "Gentle", "Genuine", "Giant", "Giddy", "Gifted", "Gigantic", "Giving", "Glamorous", "Glaring", "Glass", "Gleaming", "Gleeful", "Glistening", "Glittering", "Gloomy", "Glorious", "Glossy", "Glum", "Golden", "Good", "Good-natured", "Gorgeous", "Graceful", "Gracious", "Grand", "Grandiose", "Granular", "Grateful", "Grave", "Gray", "Great", "Greedy", "Green", "Gregarious", "Grim", "Grimy", "Gripping", "Grizzled", "Gross", "Grotesque", "Grouchy", "Grounded", "Growing", "Growling", "Grown", "Grubby", "Gruesome", "Grumpy", "Guilty", "Gullible", "Gummy", "Hairy", "Half", "Handmade", "Handsome", "Handy", "Happy", "Happy-go-lucky", "Hard", "Hard-to-find", "Harmful", "Harmless", "Harmonious", "Harsh", "Hasty", "Hateful", "Haunting", "Healthy", "Heartfelt", "Hearty", "Heavenly", "Heavy", "Hefty", "Helpful", "Helpless", "Hidden", "Hideous", "High", "High-level", "Hilarious", "Hoarse", "Hollow", "Homely", "Honest", "Honorable", "Honored", "Hopeful", "Horrible", "Hospitable", "Hot", "Huge", "Humble", "Humiliating", "Humming", "Humongous", "Hungry", "Hurtful", "Husky", "Icky", "Icy", "Ideal", "Idealistic", "Identical", "Idiotic", "Idle", "Idolized", "Ignorant", "Ill", "Ill-fated", "Ill-informed", "Illegal", "Illiterate", "Illustrious", "Imaginary", "Imaginative", "Immaculate", "Immaterial", "Immediate", "Immense", "Impartial", "Impassioned", "Impeccable", "Imperfect", "Imperturbable", "Impish", "Impolite", "Important", "Impossible", "Impractical", "Impressionable", "Impressive", "Improbable", "Impure", "Inborn", "Incomparable", "Incompatible", "Incomplete", "Inconsequential", "Incredible", "Indelible", "Indolent", "Inexperienced", "Infamous", "Infantile", "Infatuated", "Inferior", "Infinite", "Informal", "Innocent", "Insecure", "Insidious", "Insignificant", "Insistent", "Instructive", "Insubstantial", "Intelligent", "Intent", "Intentional", "Interesting", "Internal", "International", "Intrepid", "Ironclad", "Irresponsible", "Irritating", "Itchy", "Jaded", "Jagged", "Jam-packed", "Jaunty", "Jealous", "Jittery", "Joint", "Jolly", "Jovial", "Joyful", "Joyous", "Jubilant", "Judicious", "Juicy", "Jumbo", "Jumpy", "Junior", "Juvenile", "Kaleidoscopic", "Keen", "Key", "Kind", "Kindhearted", "Kindly", "Klutzy", "Knobby", "Knotty", "Knowing", "Knowledgeable", "Known", "Kooky", "Kosher", "Lame", "Lanky", "Large", "Last", "Lasting", "Late", "Lavish", "Lawful", "Lazy", "Leading", "Leafy", "Lean", "Left", "Legal", "Legitimate", "Light", "Lighthearted", "Likable", "Likely", "Limited", "Limp", "Limping", "Linear", "Lined", "Liquid", "Little", "Live", "Lively", "Livid", "Loathsome", "Lone", "Lonely", "Long", "Long-term", "Loose", "Lopsided", "Lost", "Loud", "Lovable", "Lovely", "Loving", "Low", "Loyal", "Lucky", "Lumbering", "Luminous", "Lumpy", "Lustrous", "Luxurious", "Mad", "Made-up", "Magnificent", "Majestic", "Major", "Male", "Mammoth", "Married", "Marvelous", "Masculine", "Massive", "Mature", "Meager", "Mealy", "Mean", "Measly", "Meaty", "Medical", "Mediocre", "Medium", "Meek", "Mellow", "Melodic", "Memorable", "Menacing", "Merry", "Messy", "Metallic", "Mild", "Milky", "Mindless", "Miniature", "Minor", "Minty", "Miserable", "Miserly", "Misguided", "Misty", "Mixed", "Modern", "Modest", "Moist", "Monstrous", "Monthly", "Monumental", "Moral", "Mortified", "Motherly", "Motionless", "Mountainous", "Muddy", "Muffled", "Multicolored", "Mundane", "Murky", "Mushy", "Musty", "Muted", "Mysterious", "Naive", "Narrow", "Nasty", "Natural", "Naughty", "Nautical", "Near", "Neat", "Necessary", "Needy", "Negative", "Neglected", "Negligible", "Neighboring", "Nervous", "New", "Next", "Nice", "Nifty", "Nimble", "Nippy", "Nocturnal", "Noisy", "Nonstop", "Normal", "Notable", "Noted", "Noteworthy", "Novel", "Noxious", "Numb", "Nutritious", "Nutty", "Obedient", "Obese", "Oblong", "Obvious", "Occasional", "Odd", "Oddball", "Offbeat", "Offensive", "Official", "Oily", "Old", "Old-fashioned", "Only", "Open", "Optimal", "Optimistic", "Opulent", "Orange", "Orderly", "Ordinary", "Organic", "Original", "Ornate", "Ornery", "Other", "Outgoing", "Outlandish", "Outlying", "Outrageous", "Outstanding", "Oval", "Overcooked", "Overdue", "Overjoyed", "Overlooked", "Palatable", "Pale", "Paltry", "Parallel", "Parched", "Partial", "Passionate", "Past", "Pastel", "Peaceful", "Peppery", "Perfect", "Perfumed", "Periodic", "Perky", "Personal", "Pertinent", "Pesky", "Pessimistic", "Petty", "Phony", "Physical", "Piercing", "Pink", "Pitiful", "Plain", "Plaintive", "Plastic", "Playful", "Pleasant", "Pleased", "Pleasing", "Plump", "Plush", "Pointed", "Pointless", "Poised", "Polished", "Polite", "Political", "Poor", "Popular", "Portly", "Posh", "Positive", "Possible", "Potable", "Powerful", "Powerless", "Practical", "Precious", "Present", "Prestigious", "Pretty", "Previous", "Pricey", "Prickly", "Primary", "Prime", "Pristine", "Private", "Prize", "Probable", "Productive", "Profitable", "Profuse", "Proper", "Proud", "Prudent", "Punctual", "Pungent", "Puny", "Pure", "Purple", "Pushy", "Putrid", "Puzzled", "Puzzling", "Quaint", "Qualified", "Quarrelsome", "Quarterly", "Queasy", "Querulous", "Questionable", "Quick", "Quick-witted", "Quiet", "Quintessential", "Quirky", "Quixotic", "Quizzical", "Radiant", "Ragged", "Rapid", "Rare", "Rash", "Raw", "Ready", "Real", "Realistic", "Reasonable", "Recent", "Reckless", "Rectangular", "Red", "Reflecting", "Regal", "Regular", "Reliable", "Relieved", "Remarkable", "Remorseful", "Remote", "Repentant", "Repulsive", "Required", "Respectful", "Responsible", "Revolving", "Rewarding", "Rich", "Right", "Rigid", "Ringed", "Ripe", "Roasted", "Robust", "Rosy", "Rotating", "Rotten", "Rough", "Round", "Rowdy", "Royal", "Rubbery", "Ruddy", "Rude", "Rundown", "Runny", "Rural", "Rusty", "Sad", "Safe", "Salty", "Same", "Sandy", "Sane", "Sarcastic", "Sardonic", "Satisfied", "Scaly", "Scarce", "Scared", "Scary", "Scented", "Scholarly", "Scientific", "Scornful", "Scratchy", "Scrawny", "Second", "Second-hand", "Secondary", "Secret", "Self-assured", "Self-reliant", "Selfish", "Sentimental", "Separate", "Serene", "Serious", "Serpentine", "Several", "Severe", "Shabby", "Shadowy", "Shady", "Shallow", "Shameful", "Shameless", "Sharp", "Shimmering", "Shiny", "Shocked", "Shocking", "Shoddy", "Short", "Short-term", "Showy", "Shrill", "Shy", "Sick", "Silent", "Silky", "Silly", "Silver", "Similar", "Simple", "Simplistic", "Sinful", "Single", "Sizzling", "Skeletal", "Skinny", "Sleepy", "Slight", "Slim", "Slimy", "Slippery", "Slow", "Slushy", "Small", "Smart", "Smoggy", "Smooth", "Smug", "Snappy", "Snarling", "Sneaky", "Sniveling", "Snoopy", "Sociable", "Soft", "Soggy", "Solid", "Somber", "Sophisticated", "Sore", "Sorrowful", "Soulful", "Soupy", "Sour", "Spanish", "Sparkling", "Sparse", "Specific", "Spectacular", "Speedy", "Spherical", "Spicy", "Spiffy", "Spirited", "Spiteful", "Splendid", "Spotless", "Spotted", "Spry", "Square", "Squeaky", "Squiggly", "Stable", "Staid", "Stained", "Stale", "Standard", "Starchy", "Stark", "Starry", "Steel", "Steep", "Sticky", "Stiff", "Stimulating", "Stingy", "Stormy", "Straight", "Strange", "Strict", "Strident", "Striking", "Striped", "Strong", "Studious", "Stunning", "Stupendous", "Stupid", "Sturdy", "Stylish", "Subdued", "Submissive", "Substantial", "Subtle", "Suburban", "Sudden", "Sugary", "Sunny", "Super", "Superb", "Superficial", "Superior", "Supportive", "Sure-footed", "Surprised", "Suspicious", "Svelte", "Sweaty", "Sweet", "Sweltering", "Swift", "Sympathetic", "Talkative", "Tall", "Tame", "Tan", "Tangible", "Tart", "Tasty", "Tattered", "Taut", "Tedious", "Teeming", "Tempting", "Tender", "Tense", "Tepid", "Terrible", "Terrific", "Testy", "Thankful", "That", "These", "Thick", "Thin", "Third", "Thirsty", "This", "Thorny", "Thorough", "Those", "Thoughtful", "Threadbare", "Thrifty", "Thunderous", "Tidy", "Tight", "Timely", "Tinted", "Tiny", "Tired", "Torn", "Total", "Tough", "Tragic", "Trained", "Traumatic", "Treasured", "Tremendous", "Triangular", "Tricky", "Trifling", "Trim", "Trivial", "Troubled", "True", "Trusting", "Trustworthy", "Trusty", "Truthful", "Tubby", "Turbulent", "Twin", "Ugly", "Ultimate", "Unacceptable", "Unaware", "Uncomfortable", "Uncommon", "Unconscious", "Understated", "Unequaled", "Uneven", "Unfinished", "Unfit", "Unfolded", "Unfortunate", "Unhappy", "Unhealthy", "Uniform", "Unimportant", "Unique", "United", "Unkempt", "Unknown", "Unlawful", "Unlined", "Unlucky", "Unnatural", "Unpleasant", "Unrealistic", "Unripe", "Unruly", "Unselfish", "Unsightly", "Unsteady", "Unsung", "Untidy", "Untimely", "Untried", "Untrue", "Unused", "Unusual", "Unwelcome", "Unwieldy", "Unwilling", "Unwitting", "Unwritten", "Upbeat", "Upright", "Upset", "Urban", "Usable", "Used", "Useful", "Useless", "Utilized", "Utter", "Vacant", "Vague", "Vain", "Valid", "Valuable", "Vapid", "Variable", "Vast", "Velvety", "Venerated", "Vengeful", "Verifiable", "Vibrant", "Vicious", "Victorious", "Vigilant", "Vigorous", "Villainous", "Violent", "Violet", "Virtual", "Virtuous", "Visible", "Vital", "Vivacious", "Vivid", "Voluminous", "Wan", "Warlike", "Warm", "Warmhearted", "Warped", "Wary", "Wasteful", "Watchful", "Waterlogged", "Watery", "Wavy", "Weak", "Wealthy", "Weary", "Webbed", "Wee", "Weekly", "Weepy", "Weighty", "Weird", "Welcome", "Well-documented", "Well-groomed", "Well-informed", "Well-lit", "Well-made", "Well-off", "Well-to-do", "Well-worn", "Wet", "Whimsical", "Whirlwind", "Whispered", "White", "Whole", "Whopping", "Wicked", "Wide", "Wide-eyed", "Wiggly", "Wild", "Willing", "Wilted", "Winding", "Windy", "Winged", "Wiry", "Wise", "Witty", "Wobbly", "Woeful", "Wonderful", "Wooden", "Woozy", "Wordy", "Worldly", "Worn", "Worried", "Worrisome", "Worse", "Worst", "Worthless", "Worthwhile", "Worthy", "Wrathful", "Wretched", "Writhing", "Wrong", "Wry", "Yawning", "Yearly", "Yellow", "Yellowish", "Young", "Youthful", "Yummy", "Zany", "Zealous", "Zesty", "Zigzag"];
-
-            var prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+                        const prefixes = ["Abandoned", "Able", "Absolute", "Academic", "Acceptable", "Acclaimed", "Accomplished", "Accurate", "Aching", "Acidic", "Acrobatic", "Active", "Actual", "Adept", "Admirable", "Admired", "Adolescent", "Adorable", "Adored", "Advanced", "Adventurous", "Affectionate", "Afraid", "Aged", "Aggravating", "Aggressive", "Agile", "Agitated", "Agonizing", "Agreeable", "Ajar", "Alarmed", "Alarming", "Alert", "Alienated", "Alive", "Altruistic", "Amazing", "Ambitious", "Ample", "Amused", "Amusing", "Anchored", "Ancient", "Angelic", "Angry", "Anguished", "Animated", "Annual", "Another", "Antique", "Anxious", "Apprehensive", "Appropriate", "Apt", "Arctic", "Arid", "Aromatic", "Artistic", "Ashamed", "Assured", "Astonishing", "Athletic", "Attached", "Attentive", "Attractive", "Austere", "Authentic", "Authorized", "Automatic", "Avaricious", "Average", "Aware", "Awesome", "Awful", "Awkward", "Babyish", "Back", "Bad", "Baggy", "Bare", "Barren", "Basic", "Beautiful", "Belated", "Beloved", "Beneficial", "Best", "Better", "Bewitched", "Big", "Big-hearted", "Biodegradable", "Bite-sized", "Bitter", "Black", "Black-and-white", "Bland", "Blank", "Blaring", "Bleak", "Blind", "Blissful", "Blond", "Blue", "Blushing", "Bogus", "Boiling", "Bold", "Bony", "Boring", "Bossy", "Bouncy", "Bountiful", "Bowed", "Brave", "Breakable", "Brief", "Bright", "Brilliant", "Brisk", "Broken", "Bronze", "Brown", "Bruised", "Bubbly", "Bulky", "Bumpy", "Buoyant", "Burdensome", "Burly", "Bustling", "Busy", "Buttery", "Buzzing", "Calculating", "Calm", "Candid", "Canine", "Capital", "Carefree", "Careful", "Careless", "Caring", "Cautious", "Cavernous", "Celebrated", "Charming", "Cheap", "Cheerful", "Cheery", "Chief", "Chilly", "Chubby", "Circular", "Classic", "Clean", "Clear", "Clear-cut", "Clever", "Close", "Closed", "Cloudy", "Clueless", "Clumsy", "Cluttered", "Coarse", "Cold", "Colorful", "Colorless", "Colossal", "Comfortable", "Common", "Compassionate", "Competent", "Complete", "Complex", "Complicated", "Composed", "Concerned", "Concrete", "Confused", "Conscious", "Considerate", "Constant", "Content", "Conventional", "Cooked", "Cool", "Cooperative", "Coordinated", "Corny", "Corrupt", "Costly", "Courageous", "Courteous", "Crafty", "Crazy", "Creamy", "Creative", "Creepy", "Criminal", "Crisp", "Critical", "Crooked", "Crowded", "Cruel", "Crushing", "Cuddly", "Cultivated", "Cultured", "Cumbersome", "Curly", "Curvy", "Cute", "Cylindrical", "Damaged", "Damp", "Dangerous", "Dapper", "Daring", "Dark", "Darling", "Dazzling", "Dead", "Deadly", "Deafening", "Dear", "Dearest", "Decent", "Decimal", "Decisive", "Deep", "Defenseless", "Defensive", "Defiant", "Deficient", "Definite", "Definitive", "Delayed", "Delectable", "Delicious", "Delightful", "Delirious", "Demanding", "Dense", "Dental", "Dependable", "Dependent", "Descriptive", "Deserted", "Detailed", "Determined", "Devoted", "Different", "Difficult", "Digital", "Diligent", "Dim", "Dimpled", "Dimwitted", "Direct", "Dirty", "Disastrous", "Discrete", "Disfigured", "Disguised", "Disgusting", "Dishonest", "Disloyal", "Dismal", "Distant", "Distinct", "Distorted", "Dizzy", "Dopey", "Doting", "Double", "Downright", "Drab", "Drafty", "Dramatic", "Dreary", "Droopy", "Dry", "Dual", "Dull", "Dutiful", "Eager", "Early", "Earnest", "Easy", "Easy-going", "Ecstatic", "Edible", "Educated", "Elaborate", "Elastic", "Elated", "Elderly", "Electric", "Elegant", "Elementary", "Elliptical", "Embarrassed", "Embellished", "Eminent", "Emotional", "Empty", "Enchanted", "Enchanting", "Energetic", "Enlightened", "Enormous", "Enraged", "Entire", "Envious", "Equal", "Equatorial", "Essential", "Esteemed", "Ethical", "Euphoric", "Even", "Evergreen", "Everlasting", "Evil", "Exalted", "Excellent", "Excitable", "Excited", "Exciting", "Exemplary", "Exhausted", "Exotic", "Expensive", "Experienced", "Expert", "Extra-large", "Extra-small", "Extraneous", "Extroverted", "Fabulous", "Failing", "Faint", "Fair", "Faithful", "Fake", "False", "Familiar", "Famous", "Fancy", "Fantastic", "Far", "Far-flung", "Far-off", "Faraway", "Fast", "Fat", "Fatal", "Fatherly", "Favorable", "Favorite", "Fearful", "Fearless", "Feisty", "Feline", "Female", "Feminine", "Few", "Fickle", "Filthy", "Fine", "Finished", "Firm", "First", "Firsthand", "Fitting", "Fixed", "Flaky", "Flamboyant", "Flashy", "Flat", "Flawed", "Flawless", "Flickering", "Flimsy", "Flippant", "Flowery", "Fluffy", "Fluid", "Flustered", "Focused", "Fond", "Foolhardy", "Foolish", "Forceful", "Forked", "Formal", "Forsaken", "Forthright", "Fortunate", "Fragrant", "Frail", "Frank", "Frayed", "Free", "French", "Frequent", "Fresh", "Friendly", "Frightened", "Frightening", "Frigid", "Frilly", "Frivolous", "Frizzy", "Front", "Frosty", "Frozen", "Frugal", "Fruitful", "Full", "Fumbling", "Functional", "Funny", "Fussy", "Fuzzy", "Gargantuan", "Gaseous", "General", "Generous", "Gentle", "Genuine", "Giant", "Giddy", "Gifted", "Gigantic", "Giving", "Glamorous", "Glaring", "Glass", "Gleaming", "Gleeful", "Glistening", "Glittering", "Gloomy", "Glorious", "Glossy", "Glum", "Golden", "Good", "Good-natured", "Gorgeous", "Graceful", "Gracious", "Grand", "Grandiose", "Granular", "Grateful", "Grave", "Gray", "Great", "Greedy", "Green", "Gregarious", "Grim", "Grimy", "Gripping", "Grizzled", "Gross", "Grotesque", "Grouchy", "Grounded", "Growing", "Growling", "Grown", "Grubby", "Gruesome", "Grumpy", "Guilty", "Gullible", "Gummy", "Hairy", "Half", "Handmade", "Handsome", "Handy", "Happy", "Happy-go-lucky", "Hard", "Hard-to-find", "Harmful", "Harmless", "Harmonious", "Harsh", "Hasty", "Hateful", "Haunting", "Healthy", "Heartfelt", "Hearty", "Heavenly", "Heavy", "Hefty", "Helpful", "Helpless", "Hidden", "Hideous", "High", "High-level", "Hilarious", "Hoarse", "Hollow", "Homely", "Honest", "Honorable", "Honored", "Hopeful", "Horrible", "Hospitable", "Hot", "Huge", "Humble", "Humiliating", "Humming", "Humongous", "Hungry", "Hurtful", "Husky", "Icky", "Icy", "Ideal", "Idealistic", "Identical", "Idiotic", "Idle", "Idolized", "Ignorant", "Ill", "Ill-fated", "Ill-informed", "Illegal", "Illiterate", "Illustrious", "Imaginary", "Imaginative", "Immaculate", "Immaterial", "Immediate", "Immense", "Impartial", "Impassioned", "Impeccable", "Imperfect", "Imperturbable", "Impish", "Impolite", "Important", "Impossible", "Impractical", "Impressionable", "Impressive", "Improbable", "Impure", "Inborn", "Incomparable", "Incompatible", "Incomplete", "Inconsequential", "Incredible", "Indelible", "Indolent", "Inexperienced", "Infamous", "Infantile", "Infatuated", "Inferior", "Infinite", "Informal", "Innocent", "Insecure", "Insidious", "Insignificant", "Insistent", "Instructive", "Insubstantial", "Intelligent", "Intent", "Intentional", "Interesting", "Internal", "International", "Intrepid", "Ironclad", "Irresponsible", "Irritating", "Itchy", "Jaded", "Jagged", "Jam-packed", "Jaunty", "Jealous", "Jittery", "Joint", "Jolly", "Jovial", "Joyful", "Joyous", "Jubilant", "Judicious", "Juicy", "Jumbo", "Jumpy", "Junior", "Juvenile", "Kaleidoscopic", "Keen", "Key", "Kind", "Kindhearted", "Kindly", "Klutzy", "Knobby", "Knotty", "Knowing", "Knowledgeable", "Known", "Kooky", "Kosher", "Lame", "Lanky", "Large", "Last", "Lasting", "Late", "Lavish", "Lawful", "Lazy", "Leading", "Leafy", "Lean", "Left", "Legal", "Legitimate", "Light", "Lighthearted", "Likable", "Likely", "Limited", "Limp", "Limping", "Linear", "Lined", "Liquid", "Little", "Live", "Lively", "Livid", "Loathsome", "Lone", "Lonely", "Long", "Long-term", "Loose", "Lopsided", "Lost", "Loud", "Lovable", "Lovely", "Loving", "Low", "Loyal", "Lucky", "Lumbering", "Luminous", "Lumpy", "Lustrous", "Luxurious", "Mad", "Made-up", "Magnificent", "Majestic", "Major", "Male", "Mammoth", "Married", "Marvelous", "Masculine", "Massive", "Mature", "Meager", "Mealy", "Mean", "Measly", "Meaty", "Medical", "Mediocre", "Medium", "Meek", "Mellow", "Melodic", "Memorable", "Menacing", "Merry", "Messy", "Metallic", "Mild", "Milky", "Mindless", "Miniature", "Minor", "Minty", "Miserable", "Miserly", "Misguided", "Misty", "Mixed", "Modern", "Modest", "Moist", "Monstrous", "Monthly", "Monumental", "Moral", "Mortified", "Motherly", "Motionless", "Mountainous", "Muddy", "Muffled", "Multicolored", "Mundane", "Murky", "Mushy", "Musty", "Muted", "Mysterious", "Naive", "Narrow", "Nasty", "Natural", "Naughty", "Nautical", "Near", "Neat", "Necessary", "Needy", "Negative", "Neglected", "Negligible", "Neighboring", "Nervous", "New", "Next", "Nice", "Nifty", "Nimble", "Nippy", "Nocturnal", "Noisy", "Nonstop", "Normal", "Notable", "Noted", "Noteworthy", "Novel", "Noxious", "Numb", "Nutritious", "Nutty", "Obedient", "Obese", "Oblong", "Obvious", "Occasional", "Odd", "Oddball", "Offbeat", "Offensive", "Official", "Oily", "Old", "Old-fashioned", "Only", "Open", "Optimal", "Optimistic", "Opulent", "Orange", "Orderly", "Ordinary", "Organic", "Original", "Ornate", "Ornery", "Other", "Outgoing", "Outlandish", "Outlying", "Outrageous", "Outstanding", "Oval", "Overcooked", "Overdue", "Overjoyed", "Overlooked", "Palatable", "Pale", "Paltry", "Parallel", "Parched", "Partial", "Passionate", "Past", "Pastel", "Peaceful", "Peppery", "Perfect", "Perfumed", "Periodic", "Perky", "Personal", "Pertinent", "Pesky", "Pessimistic", "Petty", "Phony", "Physical", "Piercing", "Pink", "Pitiful", "Plain", "Plaintive", "Plastic", "Playful", "Pleasant", "Pleased", "Pleasing", "Plump", "Plush", "Pointed", "Pointless", "Poised", "Polished", "Polite", "Political", "Poor", "Popular", "Portly", "Posh", "Positive", "Possible", "Potable", "Powerful", "Powerless", "Practical", "Precious", "Present", "Prestigious", "Pretty", "Previous", "Pricey", "Prickly", "Primary", "Prime", "Pristine", "Private", "Prize", "Probable", "Productive", "Profitable", "Profuse", "Proper", "Proud", "Prudent", "Punctual", "Pungent", "Puny", "Pure", "Purple", "Pushy", "Putrid", "Puzzled", "Puzzling", "Quaint", "Qualified", "Quarrelsome", "Quarterly", "Queasy", "Querulous", "Questionable", "Quick", "Quick-witted", "Quiet", "Quintessential", "Quirky", "Quixotic", "Quizzical", "Radiant", "Ragged", "Rapid", "Rare", "Rash", "Raw", "Ready", "Real", "Realistic", "Reasonable", "Recent", "Reckless", "Rectangular", "Red", "Reflecting", "Regal", "Regular", "Reliable", "Relieved", "Remarkable", "Remorseful", "Remote", "Repentant", "Repulsive", "Required", "Respectful", "Responsible", "Revolving", "Rewarding", "Rich", "Right", "Rigid", "Ringed", "Ripe", "Roasted", "Robust", "Rosy", "Rotating", "Rotten", "Rough", "Round", "Rowdy", "Royal", "Rubbery", "Ruddy", "Rude", "Rundown", "Runny", "Rural", "Rusty", "Sad", "Safe", "Salty", "Same", "Sandy", "Sane", "Sarcastic", "Sardonic", "Satisfied", "Scaly", "Scarce", "Scared", "Scary", "Scented", "Scholarly", "Scientific", "Scornful", "Scratchy", "Scrawny", "Second", "Second-hand", "Secondary", "Secret", "Self-assured", "Self-reliant", "Selfish", "Sentimental", "Separate", "Serene", "Serious", "Serpentine", "Several", "Severe", "Shabby", "Shadowy", "Shady", "Shallow", "Shameful", "Shameless", "Sharp", "Shimmering", "Shiny", "Shocked", "Shocking", "Shoddy", "Short", "Short-term", "Showy", "Shrill", "Shy", "Sick", "Silent", "Silky", "Silly", "Silver", "Similar", "Simple", "Simplistic", "Sinful", "Single", "Sizzling", "Skeletal", "Skinny", "Sleepy", "Slight", "Slim", "Slimy", "Slippery", "Slow", "Slushy", "Small", "Smart", "Smoggy", "Smooth", "Smug", "Snappy", "Snarling", "Sneaky", "Sniveling", "Snoopy", "Sociable", "Soft", "Soggy", "Solid", "Somber", "Sophisticated", "Sore", "Sorrowful", "Soulful", "Soupy", "Sour", "Spanish", "Sparkling", "Sparse", "Specific", "Spectacular", "Speedy", "Spherical", "Spicy", "Spiffy", "Spirited", "Spiteful", "Splendid", "Spotless", "Spotted", "Spry", "Square", "Squeaky", "Squiggly", "Stable", "Staid", "Stained", "Stale", "Standard", "Starchy", "Stark", "Starry", "Steel", "Steep", "Sticky", "Stiff", "Stimulating", "Stingy", "Stormy", "Straight", "Strange", "Strict", "Strident", "Striking", "Striped", "Strong", "Studious", "Stunning", "Stupendous", "Stupid", "Sturdy", "Stylish", "Subdued", "Submissive", "Substantial", "Subtle", "Suburban", "Sudden", "Sugary", "Sunny", "Super", "Superb", "Superficial", "Superior", "Supportive", "Sure-footed", "Surprised", "Suspicious", "Svelte", "Sweaty", "Sweet", "Sweltering", "Swift", "Sympathetic", "Talkative", "Tall", "Tame", "Tan", "Tangible", "Tart", "Tasty", "Tattered", "Taut", "Tedious", "Teeming", "Tempting", "Tender", "Tense", "Tepid", "Terrible", "Terrific", "Testy", "Thankful", "That", "These", "Thick", "Thin", "Third", "Thirsty", "This", "Thorny", "Thorough", "Those", "Thoughtful", "Threadbare", "Thrifty", "Thunderous", "Tidy", "Tight", "Timely", "Tinted", "Tiny", "Tired", "Torn", "Total", "Tough", "Tragic", "Trained", "Traumatic", "Treasured", "Tremendous", "Triangular", "Tricky", "Trifling", "Trim", "Trivial", "Troubled", "True", "Trusting", "Trustworthy", "Trusty", "Truthful", "Tubby", "Turbulent", "Twin", "Ugly", "Ultimate", "Unacceptable", "Unaware", "Uncomfortable", "Uncommon", "Unconscious", "Understated", "Unequaled", "Uneven", "Unfinished", "Unfit", "Unfolded", "Unfortunate", "Unhappy", "Unhealthy", "Uniform", "Unimportant", "Unique", "United", "Unkempt", "Unknown", "Unlawful", "Unlined", "Unlucky", "Unnatural", "Unpleasant", "Unrealistic", "Unripe", "Unruly", "Unselfish", "Unsightly", "Unsteady", "Unsung", "Untidy", "Untimely", "Untried", "Untrue", "Unused", "Unusual", "Unwelcome", "Unwieldy", "Unwilling", "Unwitting", "Unwritten", "Upbeat", "Upright", "Upset", "Urban", "Usable", "Used", "Useful", "Useless", "Utilized", "Utter", "Vacant", "Vague", "Vain", "Valid", "Valuable", "Vapid", "Variable", "Vast", "Velvety", "Venerated", "Vengeful", "Verifiable", "Vibrant", "Vicious", "Victorious", "Vigilant", "Vigorous", "Villainous", "Violent", "Violet", "Virtual", "Virtuous", "Visible", "Vital", "Vivacious", "Vivid", "Voluminous", "Wan", "Warlike", "Warm", "Warmhearted", "Warped", "Wary", "Wasteful", "Watchful", "Waterlogged", "Watery", "Wavy", "Weak", "Wealthy", "Weary", "Webbed", "Wee", "Weekly", "Weepy", "Weighty", "Weird", "Welcome", "Well-documented", "Well-groomed", "Well-informed", "Well-lit", "Well-made", "Well-off", "Well-to-do", "Well-worn", "Wet", "Whimsical", "Whirlwind", "Whispered", "White", "Whole", "Whopping", "Wicked", "Wide", "Wide-eyed", "Wiggly", "Wild", "Willing", "Wilted", "Winding", "Windy", "Winged", "Wiry", "Wise", "Witty", "Wobbly", "Woeful", "Wonderful", "Wooden", "Woozy", "Wordy", "Worldly", "Worn", "Worried", "Worrisome", "Worse", "Worst", "Worthless", "Worthwhile", "Worthy", "Wrathful", "Wretched", "Writhing", "Wrong", "Wry", "Yawning", "Yearly", "Yellow", "Yellowish", "Young", "Youthful", "Yummy", "Zany", "Zealous", "Zesty", "Zigzag"];
+            const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
 
             const prefixCheckbox = document.querySelector('input[name="prefixes"]');
             if (prefixCheckbox && prefixCheckbox.checked) {
@@ -300,34 +291,32 @@
             const hpCell = document.createElement("td");
             const hpInput = document.createElement("input");
             hpInput.type = "number";
-            hpInput.placeholder = hp;
+            hpInput.placeholder = hp; // Use the actual HP from ADVERSARY_DATA
             hpInput.min = "0";
+            hpInput.value = hp; // Set initial value to default HP
             hpCell.appendChild(hpInput);
             combatRow.appendChild(hpCell);
 
             const stressCell = document.createElement("td");
             const stressInput = document.createElement("input");
             stressInput.type = "number";
-            stressInput.placeholder = stress;
+            stressInput.placeholder = stress; // Use the actual Stress from ADVERSARY_DATA
             stressInput.min = "0";
+            stressInput.value = stress; // Set initial value to default Stress
             stressCell.appendChild(stressInput);
             combatRow.appendChild(stressCell);
 
             combatTrackerBody.appendChild(combatRow);
           }
-
-
-        } else {
-          console.warn("Could not find all elements within a monster row.");
         }
       });
 
-      // Apply conditional point adjustments to initialPoints
+      // Apply conditional point adjustments
       if (lowerTierMonsterDetected) {
         initialPoints++;
       }
 
-      if (!specialMonsterDetected) {
+      if (!specialMonsterDetected && monsterRows.length > 0) { // Only add if there are monsters AND no special ones
         initialPoints++;
       }
 
@@ -350,18 +339,11 @@
         initialPoints += 2;
       }
 
-      // Calculate the final remaining points
       const finalRemainingPoints = initialPoints - totalMonsterCost;
 
-      // --- Update the sticky info box unconditionally ---
+      // Update the sticky info box
       if (stickyPointsInfoElement) {
         stickyPointsInfoElement.innerHTML = `Points Left: <b>${finalRemainingPoints}</b>`;
-
-        // Optional: Add color coding to the sticky box based on value
-        /* if (finalRemainingPoints > 1) {
-          stickyPointsInfoElement.querySelector('b').style.color = 'var(--pico-color-green-100)';
-        } else */
-
         if (finalRemainingPoints < 0) {
           stickyPointsInfoElement.querySelector('b').style.color = 'var(--pico-color-red-500)';
         } else {
@@ -369,14 +351,14 @@
         }
       }
 
+      // Update calculation info
       if (showInfoToggle && !showInfoToggle.checked) {
         calcTableElement.innerHTML = "";
-
       } else {
         let outputContent = `<article><div class="container-fluid">
                                 <b>Calculation:</b> <br>
                                 Players: ${players}<br>
-                                ${players} Players * 3 + 2: ${initialPoints}<br>
+                                Base Points (${players} Players * 3 + 2): ${players * 3 + 2}<br>
                                 Party Tier: ${partyTierValue}<br><br>`;
 
         monsterRows.forEach(row => {
@@ -387,45 +369,12 @@
 
           if (currentMonsterTypeSelect && currentMonsterAmountInput && currentMonsterTierInput && currentMonsterNameInput) {
             const currentMonsterType = currentMonsterTypeSelect.value;
-            const currentMonsterAmount = parseInt(currentMonsterAmountInput.value, 10);
-            const currentMonsterTier = parseInt(currentMonsterTierInput.value, 10);
+            const currentMonsterAmount = parseInt(currentMonsterAmountInput.value, 10) || 0;
+            const currentMonsterTier = parseInt(currentMonsterTierInput.value, 10) || 1;
             const currentMonsterName = currentMonsterNameInput.value || "Unnamed Adversary";
 
-            let monsterCost = 0;
-            switch (currentMonsterType) {
-              case "BRUISER":
-                monsterCost = 4;
-                break;
-              case "HORDE":
-                monsterCost = 2;
-                break;
-              case "LEADER":
-                monsterCost = 5;
-                break;
-              case "MINION":
-                monsterCost = 4;
-                break;
-              case "RANGED":
-                monsterCost = 2;
-                break;
-              case "SKULKS":
-                monsterCost = 1;
-                break;
-              case "SOCIAL":
-                monsterCost = 4;
-                break;
-              case "SOLO":
-                monsterCost = 5;
-                break;
-              case "STANDARD":
-                monsterCost = 2;
-                break;
-              case "SUPPORT":
-                monsterCost = 1;
-                break;
-              default:
-                monsterCost = 0;
-            }
+            const adversaryData = ADVERSARY_DATA[currentMonsterType] || { cost: 0 };
+            const monsterCost = adversaryData.cost;
             let costForThisMonster = monsterCost * currentMonsterAmount;
             outputContent += `Adversary: ${currentMonsterName} (Type: ${currentMonsterType}, Amount: ${currentMonsterAmount}, Tier: ${currentMonsterTier}) - Cost: ${costForThisMonster}<br>`;
           }
@@ -434,7 +383,7 @@
         if (lowerTierMonsterDetected) {
           outputContent += `Note: At least one adversary is from a lower tier than the party. This adds +1.<br>`;
         }
-        if (!specialMonsterDetected) {
+        if (!specialMonsterDetected && monsterRows.length > 0) {
           outputContent += `Note: Since you are not using any Bruisers, Hordes, Leaders, or Solos, you gain +1.<br>`;
         }
         if (soloMonsterCount >= 2) {
