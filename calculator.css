@@ -26,3 +26,15 @@
 td input {
     margin-bottom: 0 !important;
 }
+
+/* Stripe effect for the combat tracker table */
+#combatTrackerBody tr.stripe-1 td { /* TARGET CELLS INSIDE ROWS WITH stripe-1 class */
+  background-color: var(--pico-color-slate-50) !important;
+}
+
+/* Dark mode compatibility for the stripe effect */
+@media (prefers-color-scheme: dark) {
+  #combatTrackerBody tr.stripe-1 td { /* TARGET CELLS INSIDE ROWS WITH stripe-1 class */
+    background-color: var(--pico-color-slate-700) !important;
+  }
+}
