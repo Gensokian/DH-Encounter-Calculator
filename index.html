@@ -121,15 +121,11 @@
   </article>
 
   <script>
-    // Global index to ensure each row has a unique ID
     let rIndex = 0;
 
-    // This function now creates DOM elements directly instead of using innerHTML.
-    // This avoids wiping out the existing input values.
     function addRow() {
       const monsterTable = document.getElementById("monsterTable");
 
-      // We need to capture the index for this specific row so the remove button works correctly.
       const currentIndex = rIndex;
 
       // Create a container for the new row of inputs
@@ -177,7 +173,6 @@
       removeButton.className = "secondary";
       removeButton.value = "X";
       // When this specific button is clicked, it will call remRow with its own index.
-      // This works because `currentIndex` is "closed over" by this function.
       removeButton.onclick = function () {
         remRow(currentIndex);
       };
@@ -189,10 +184,8 @@
       row.appendChild(typeinput);
       row.appendChild(removeButton);
 
-      // Add the new row to the main fieldset without destroying the old ones
       monsterTable.appendChild(row);
 
-      // Increment the global index for the *next* row
       rIndex++;
 
       calcStuff();
