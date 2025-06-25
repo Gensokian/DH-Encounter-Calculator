@@ -54,6 +54,10 @@
             <input type="checkbox" onchange="calcStuff()" name="prefixes" role="switch" />
             Add Prefixes
           </label>
+          <label>
+            <input type="checkbox" onchange="togglePointIndicator()" name="pointToggle" role="switch" />
+            Hide point display
+          </label>
         </fieldset>
         <hr>
 
@@ -77,9 +81,11 @@
 
         <table>
           <thead>
-            <td>
+            <!-- OPTIONAL Numbers... but looks silly on mobile
+             <td>
               Nr
             </td>
+             -->
             <td>
               Name
             </td>
@@ -87,7 +93,7 @@
               Hp
             </td>
             <td>
-              Stress
+              St
             </td>
           </thead>
           <tbody id="combatTrackerBody">
@@ -98,11 +104,17 @@
 
     <h1>Legalities</h1>
     <hr>
-<article>
-  <p>This Encounter Calculator simplifies encounter creation in line with the <a href="https://www.daggerheart.com/srd/">Daggerheart System Reference Document 1.0</a>. © Critical Role, LLC, and operates under the <a href="http://www.darringtonpress.com/license">Darrington Press Community Gaming (DPCGL) License</a>.</p>
-  <p>Please note that this tool isn't a complete substitute for the official encounter-building guidelines found in the <a href="https://www.daggerheart.com/buy/">Daggerheart Core Rulebook</a>, as it only supports the core rules.</p>
-  <p>We're grateful to Darrington Press for this fantastic resource, and we appreciate you using this Encounter Builder!</p>
-</article>
+    <article>
+      <p>This Encounter Calculator simplifies encounter creation in line with the <a
+          href="https://www.daggerheart.com/srd/">Daggerheart System Reference Document 1.0</a>. © Critical Role, LLC,
+        and operates under the <a href="http://www.darringtonpress.com/license">Darrington Press Community Gaming
+          (DPCGL) License</a>.</p>
+      <p>Please note that this tool isn't a complete substitute for the official encounter-building guidelines found in
+        the <a href="https://www.daggerheart.com/buy/">Daggerheart Core Rulebook</a>, as it only supports the core
+        rules.</p>
+      <p>We're grateful to Darrington Press for this fantastic resource, and we appreciate you using this Encounter
+        Builder!</p>
+    </article>
   </main>
   <article id="stickyPointsInfo">
     Points: <b>0</b>
@@ -183,7 +195,7 @@
       // Increment the global index for the *next* row
       rIndex++;
 
-      calcStuff(); //Update directly
+      calcStuff();
     }
 
     // This function removes a specific row by its unique ID
@@ -198,19 +210,16 @@
       }
     }
 
-    // Add one row by default to get the user started
     window.onload = function () {
+      // First row is on the house :)
       addRow();
 
-      // Get a reference to your monsterTable
       const monsterTable = document.getElementById("monsterTable");
 
       // Attach a single 'change' event listener to the monsterTable
       monsterTable.addEventListener('change', function (event) {
-        // Check if the changed element is one of our dynamic inputs/selects
-        // event.target is the specific element that triggered the change
         if (event.target.matches('input[name^="tName"], input[name^="nCount"], input[name^="nTier"], select[name^="sType"]')) {
-          calcStuff(); // Recalculate if a relevant input/select in a dynamic row changes
+          calcStuff();
         }
       });
     }
@@ -218,16 +227,16 @@
 
     /* Function */
     function calcStuff() {
-      // Get the toggle checkbox
+      // Get the toggle checkboxes
       const showInfoToggle = document.getElementById("showCalculationInfoToggle");
-      const calcTableElement = document.getElementById("calcTable"); // Get the main output element
-      const stickyPointsInfoElement = document.getElementById("stickyPointsInfo"); // Get the sticky info element
-      const combatTrackerBody = document.getElementById("combatTrackerBody"); // Get the combat tracker table body
+      const calcTableElement = document.getElementById("calcTable");
+      const stickyPointsInfoElement = document.getElementById("stickyPointsInfo");
+      const combatTrackerBody = document.getElementById("combatTrackerBody");
 
       // Clear existing combat tracker rows
       combatTrackerBody.innerHTML = '';
 
-      // --- All calculation logic must run to get the final remaining points ---
+      // The Calculogic
 
       var players = document.querySelector('input[name="nPlayers"]').value;
       var initialPoints = players * 3 + 2;
@@ -261,68 +270,6 @@
           let hp = 0;
           let stress = 0;
 
-          switch (currentMonsterType) {
-            case "BRUISER":
-              monsterCost = 4;
-              hp = 10;
-              stress = 10;
-              specialMonsterDetected = true;
-              break;
-            case "HORDE":
-              monsterCost = 2;
-              hp = 6;
-              stress = 6;
-              specialMonsterDetected = true;
-              break;
-            case "LEADER":
-              monsterCost = 5;
-              hp = 12;
-              stress = 12;
-              specialMonsterDetected = true;
-              break;
-            case "MINION":
-              monsterCost = 4;
-              hp = 8;
-              stress = 8;
-              break;
-            case "RANGED":
-              monsterCost = 2;
-              hp = 6;
-              stress = 6;
-              break;
-            case "SKULKS":
-              monsterCost = 1;
-              hp = 4;
-              stress = 4;
-              break;
-            case "SOCIAL":
-              monsterCost = 4;
-              hp = 8;
-              stress = 8;
-              break;
-            case "SOLO":
-              monsterCost = 5;
-              hp = 15; // Solo monsters typically have higher HP/Stress
-              stress = 15;
-              specialMonsterDetected = true;
-              soloMonsterCount += currentMonsterAmount;
-              break;
-            case "STANDARD":
-              monsterCost = 2;
-              hp = 6;
-              stress = 6;
-              break;
-            case "SUPPORT":
-              monsterCost = 1;
-              hp = 4;
-              stress = 4;
-              break;
-            default:
-              monsterCost = 0;
-              hp = 0;
-              stress = 0;
-          }
-
           let costForThisMonster = monsterCost * currentMonsterAmount;
 
           if (currentMonsterTier < partyTierValue) {
@@ -335,9 +282,12 @@
           for (let i = 0; i < currentMonsterAmount; i++) {
             const combatRow = document.createElement("tr");
 
+            /* OPTIONAL Number Column
+
             const nrCell = document.createElement("td");
             nrCell.textContent = combatTrackerMonsterIndex++;
             combatRow.appendChild(nrCell);
+            */
 
             const nameCell = document.createElement("td");
 
@@ -358,7 +308,6 @@
             hpInput.type = "number";
             hpInput.placeholder = hp;
             hpInput.min = "0";
-            hpInput.value = hp; // Set initial value to monster's base HP
             hpCell.appendChild(hpInput);
             combatRow.appendChild(hpCell);
 
@@ -367,7 +316,6 @@
             stressInput.type = "number";
             stressInput.placeholder = stress;
             stressInput.min = "0";
-            stressInput.value = stress; // Set initial value to monster's base Stress
             stressCell.appendChild(stressInput);
             combatRow.appendChild(stressCell);
 
@@ -427,19 +375,17 @@
         }
       }
 
-      // --- Now, handle the main calculation info display based on the toggle ---
       if (showInfoToggle && !showInfoToggle.checked) {
-        calcTableElement.innerHTML = ""; // Clear existing content if toggle is off
-        // No return needed here as sticky box update is already done
+        calcTableElement.innerHTML = "";
+
       } else {
-        // Build and display outputContent as before
         let outputContent = `<article><div class="container-fluid">
                                 <b>Calculation:</b> <br>
                                 Players: ${players}<br>
                                 ${players} Players * 3 + 2: ${initialPoints}<br>
                                 Party Tier: ${partyTierValue}<br><br>`;
 
-        monsterRows.forEach(row => { // Re-iterate to build detailed output
+        monsterRows.forEach(row => {
           const currentMonsterTypeSelect = row.querySelector('select[name^="sType"]');
           const currentMonsterAmountInput = row.querySelector('input[name^="nCount"]');
           const currentMonsterTierInput = row.querySelector('input[name^="nTier"]');
@@ -451,7 +397,7 @@
             const currentMonsterTier = parseInt(currentMonsterTierInput.value, 10);
             const currentMonsterName = currentMonsterNameInput.value || "Unnamed Adversary";
 
-            let monsterCost = 0; // Recalculate for output string
+            let monsterCost = 0;
             switch (currentMonsterType) {
               case "BRUISER":
                 monsterCost = 4;
@@ -511,10 +457,21 @@
         }
 
         outputContent += `<br>Total Monster Cost: ${totalMonsterCost}<br>`;
-        outputContent += `Remaining Points: ${finalRemainingPoints}<br>`; // Use finalRemainingPoints here
+        outputContent += `Remaining Points: ${finalRemainingPoints}<br>`;
 
         outputContent += "</div></article>";
-        calcTableElement.innerHTML = outputContent; // Update the main output
+        calcTableElement.innerHTML = outputContent;
+      }
+    }
+
+    function togglePointIndicator() {
+      let pointtoggler = document.querySelector('input[name="pointToggle"]');
+      let pointcounter = document.getElementById("stickyPointsInfo");
+
+      if (pointtoggler.checked) {
+        pointcounter.hidden = true;
+      } else {
+        pointcounter.hidden = false;
       }
     }
   </script>
