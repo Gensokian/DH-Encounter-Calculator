@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" type="image/png" href="images/favicon.png" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.colors.min.css">
+  <link rel="stylesheet" href="calculator.css">
+
+  <title>DH Encounter Calculator!</title>
+</head>
+
+<body>
+  <main class="container" style="margin-top: 5%">
+    <h1>Daggerheart Encounter builder</h1>
+    <hr>
+    <article class="container-fluid">
+      <div class="container-fluid">
+        <fieldset>
+          <legend><b>Party config:</b></legend>
+          <label>
+            Player Count
+            <input name="nPlayers" type="number" oninput="calcStuff()" placeholder="Players" value="4" min="1" />
+          </label>
+          <label>
+            Party Tier
+            <input name="nPartyTier" type="number" oninput="calcStuff()" placeholder="Party Tier" value="1" min="1"
+              max="4" />
+          </label>
+        </fieldset>
+        <fieldset>
+          <legend><b>Pre-Conditions:</b></legend>
+          <label>
+            <input type="checkbox" onchange="calcStuff()" name="easier" role="switch" />
+            Easier / Shorter (-1)
+          </label>
+          <label>
+            <input type="checkbox" onchange="calcStuff()" name="extra-damage" role="switch" />
+            Add 1d4 (or +2) to adversary damage rolls (-2)
+          </label>
+          <label>
+            <input type="checkbox" onchange="calcStuff()" name="harder" role="switch" />
+            Harder or longer fight (+2)
+          </label>
+          <label>
+            <input type="checkbox" onchange="calcStuff()" name="showCalculationInfo" id="showCalculationInfoToggle"
+              role="switch" />
+            Show Calculation Info
+          </label>
+        </fieldset>
+        <hr>
+
+        <fieldset id="monsterTable">
+          <legend><b>Adversaries:</b></legend>
+          <!-- New adversary rows will be added here -->
+        </fieldset>
+
+
+        <input type="button" onclick="addRow()" class="outline" value="Add Adversary!" />
+
+
+        <p id="calcTable"></p>
+
+      </div>
+    </article>
+
+    <h1>Encounter</h1>
+    <hr>
+    <article class="container-fluid">
+      <div class="container-fluid">
+
+        <table>
+<thead>
+  <td>
+    Monsternumber
+  </td>
+  <td>
+    Name
+  </td>
+</thead>
+
+        </table>
+      </div>
+    </article>
+
+    <article>
+      <h1>Legalities</h1>
+      <p>This Encounter Calculator is an easier way of creating Encounters along the Rules of the <a
+          href="https://www.daggerheart.com/srd/">Daggerheart System Reference Document 1.0</a>, © Critical Role, LLC,
+        under the terms of the <a href="http://www.darringtonpress.com/license">Darrington Press Community Gaming
+          (DPCGL) License</a>.</p>
+      <p>This Encounter Builder is not a replacement for the <a href="https://www.daggerheart.com/buy/">Daggerheart Core
+          Rulebook</a>s Tools.</p>
+      <p>Thanks to Darrington Press for this amazing resource, and thank you for using this Encounter Builder!</p>
+
+    </article>
+  </main>
+  <article id="stickyPointsInfo">
+    Points Left: <b>0</b>
+  </article>
+
+  <script>
+    // Global index to ensure each row has a unique ID
+    let rIndex = 0;
+
+    // This function now creates DOM elements directly instead of using innerHTML.
+    // This avoids wiping out the existing input values.
+    function addRow() {
+      const monsterTable = document.getElementById("monsterTable");
+
+      // We need to capture the index for this specific row so the remove button works correctly.
+      const currentIndex = rIndex;
+
+      // Create a container for the new row of inputs
+      const row = document.createElement("fieldset");
+      row.setAttribute("role", "group");
+      row.id = `row${currentIndex}`;
+
+      // Create the input fields
+      const nameInput = document.createElement("input");
+      nameInput.type = "text";
+      nameInput.name = `tName${currentIndex}`;
+      nameInput.placeholder = "Adversary Name";
+
+      const amountInput = document.createElement("input");
+      amountInput.type = "number";
+      amountInput.name = `nCount${currentIndex}`;
+      amountInput.placeholder = "Amount";
+      amountInput.min = "1";
+      amountInput.value = "1";
+
+      const tierInput = document.createElement("input");
+      tierInput.type = "number";
+      tierInput.name = `nTier${currentIndex}`;
+      tierInput.placeholder = "Tier";
+      tierInput.min = "1";
+      tierInput.max = "4";
+      tierInput.value = "1";
+
+      const typeinput = document.createElement("select");
+      typeinput.name = `sType${currentIndex}`;
+
+      const options = ["BRUISER", "HORDE", "LEADER", "MINION", "RANGED", "SKULKS", "SOCIAL", "SOLO", "STANDARD", "SUPPORT"];
+
+      options.forEach(value => {
+        const opt = document.createElement("option");
+        opt.value = value;
+        opt.innerHTML = value;
+        typeinput.appendChild(opt);
+      });
+      typeinput.value = "STANDARD";
+
+      // Create the remove button for this specific row
+      const removeButton = document.createElement("input");
+      removeButton.type = "button";
+      removeButton.className = "secondary";
+      removeButton.value = "X";
+      // When this specific button is clicked, it will call remRow with its own index.
+      // This works because `currentIndex` is "closed over" by this function.
+      removeButton.onclick = function () {
+        remRow(currentIndex);
+      };
+
+      // Add all the new elements to the row container
+      row.appendChild(nameInput);
+      row.appendChild(amountInput);
+      row.appendChild(tierInput);
+      row.appendChild(typeinput);
+      row.appendChild(removeButton);
+
+      // Add the new row to the main fieldset without destroying the old ones
+      monsterTable.appendChild(row);
+
+      // Increment the global index for the *next* row
+      rIndex++;
+
+      calcStuff(); //Update directly
+    }
+
+    // This function removes a specific row by its unique ID
+    function remRow(i) {
+      const rowToRemove = document.getElementById("row" + i);
+      // Check if the element exists before trying to remove it
+      if (rowToRemove) {
+        rowToRemove.remove();
+        calcStuff();
+      } else {
+        console.warn(`Could not find row with index ${i} to remove.`);
+      }
+    }
+
+    // Add one row by default to get the user started
+    window.onload = function () {
+      addRow();
+
+      // Get a reference to your monsterTable
+      const monsterTable = document.getElementById("monsterTable");
+
+      // Attach a single 'change' event listener to the monsterTable
+      monsterTable.addEventListener('change', function (event) {
+        // Check if the changed element is one of our dynamic inputs/selects
+        // event.target is the specific element that triggered the change
+        if (event.target.matches('input[name^="tName"], input[name^="nCount"], input[name^="nTier"], select[name^="sType"]')) {
+          calcStuff(); // Recalculate if a relevant input/select in a dynamic row changes
+        }
+      });
+    }
+
+
+    /* Function */
+    function calcStuff() {
+      // Get the toggle checkbox
+      const showInfoToggle = document.getElementById("showCalculationInfoToggle");
+      const calcTableElement = document.getElementById("calcTable"); // Get the main output element
+      const stickyPointsInfoElement = document.getElementById("stickyPointsInfo"); // Get the sticky info element
+
+      // --- All calculation logic must run to get the final remaining points ---
+
+      var players = document.querySelector('input[name="nPlayers"]').value;
+      var initialPoints = players * 3 + 2;
+
+      const partyTierInput = document.querySelector('input[name="nPartyTier"]');
+      const partyTierValue = partyTierInput ? parseInt(partyTierInput.value, 10) : 1;
+
+      let totalMonsterCost = 0;
+      let lowerTierMonsterDetected = false;
+      let specialMonsterDetected = false;
+      let soloMonsterCount = 0;
+
+      const monsterTable = document.getElementById("monsterTable");
+      const monsterRows = monsterTable.querySelectorAll('fieldset[role="group"]');
+
+      monsterRows.forEach(row => {
+        const currentMonsterTypeSelect = row.querySelector('select[name^="sType"]');
+        const currentMonsterAmountInput = row.querySelector('input[name^="nCount"]');
+        const currentMonsterTierInput = row.querySelector('input[name^="nTier"]');
+        const currentMonsterNameInput = row.querySelector('input[name^="tName"]');
+
+        if (currentMonsterTypeSelect && currentMonsterAmountInput && currentMonsterTierInput && currentMonsterNameInput) {
+          const currentMonsterType = currentMonsterTypeSelect.value;
+          const currentMonsterAmount = parseInt(currentMonsterAmountInput.value, 10);
+          const currentMonsterTier = parseInt(currentMonsterTierInput.value, 10);
+          const currentMonsterName = currentMonsterNameInput.value || "Unnamed Adversary";
+
+          let monsterCost = 0;
+
+          switch (currentMonsterType) {
+            case "BRUISER":
+              monsterCost = 4;
+              specialMonsterDetected = true;
+              break;
+            case "HORDE":
+              monsterCost = 2;
+              specialMonsterDetected = true;
+              break;
+            case "LEADER":
+              monsterCost = 5;
+              specialMonsterDetected = true;
+              break;
+            case "MINION":
+              monsterCost = 4;
+              break;
+            case "RANGED":
+              monsterCost = 2;
+              break;
+            case "SKULKS":
+              monsterCost = 1;
+              break;
+            case "SOCIAL":
+              monsterCost = 4;
+              break;
+            case "SOLO":
+              monsterCost = 5;
+              specialMonsterDetected = true;
+              soloMonsterCount += currentMonsterAmount;
+              break;
+            case "STANDARD":
+              monsterCost = 2;
+              break;
+            case "SUPPORT":
+              monsterCost = 1;
+              break;
+            default:
+              monsterCost = 0;
+          }
+
+          let costForThisMonster = monsterCost * currentMonsterAmount;
+
+          if (currentMonsterTier < partyTierValue) {
+            lowerTierMonsterDetected = true;
+          }
+
+          totalMonsterCost += costForThisMonster;
+        } else {
+          console.warn("Could not find all elements within a monster row.");
+        }
+      });
+
+      // Apply conditional point adjustments to initialPoints
+      if (lowerTierMonsterDetected) {
+        initialPoints++;
+      }
+
+      if (!specialMonsterDetected) {
+        initialPoints++;
+      }
+
+      if (soloMonsterCount >= 2) {
+        initialPoints -= 2;
+      }
+
+      const easierCheckbox = document.querySelector('input[name="easier"]');
+      if (easierCheckbox && easierCheckbox.checked) {
+        initialPoints -= 1;
+      }
+
+      const extraDamageCheckbox = document.querySelector('input[name="extra-damage"]');
+      if (extraDamageCheckbox && extraDamageCheckbox.checked) {
+        initialPoints -= 2;
+      }
+
+      const harderCheckbox = document.querySelector('input[name="harder"]');
+      if (harderCheckbox && harderCheckbox.checked) {
+        initialPoints += 2;
+      }
+
+      // Calculate the final remaining points
+      const finalRemainingPoints = initialPoints - totalMonsterCost;
+
+      // --- Update the sticky info box unconditionally ---
+      if (stickyPointsInfoElement) {
+        stickyPointsInfoElement.innerHTML = `Points Left: <b>${finalRemainingPoints}</b>`;
+
+        // Optional: Add color coding to the sticky box based on value
+        /* if (finalRemainingPoints > 1) {
+          stickyPointsInfoElement.querySelector('b').style.color = 'var(--pico-color-green-100)';
+        } else */
+
+        if (finalRemainingPoints < 0) {
+          stickyPointsInfoElement.querySelector('b').style.color = 'var(--pico-color-red-500)';
+        } else {
+          stickyPointsInfoElement.querySelector('b').style.color = 'var(--pico-color-green-500)';
+        }
+      }
+
+      // --- Now, handle the main calculation info display based on the toggle ---
+      if (showInfoToggle && !showInfoToggle.checked) {
+        calcTableElement.innerHTML = ""; // Clear existing content if toggle is off
+        // No return needed here as sticky box update is already done
+      } else {
+        // Build and display outputContent as before
+        let outputContent = `<article><div class="container-fluid">
+                                <b>Calculation:</b> <br>
+                                Players: ${players}<br>
+                                ${players} Players * 3 + 2: ${initialPoints}<br>
+                                Party Tier: ${partyTierValue}<br><br>`;
+
+        monsterRows.forEach(row => { // Re-iterate to build detailed output
+          const currentMonsterTypeSelect = row.querySelector('select[name^="sType"]');
+          const currentMonsterAmountInput = row.querySelector('input[name^="nCount"]');
+          const currentMonsterTierInput = row.querySelector('input[name^="nTier"]');
+          const currentMonsterNameInput = row.querySelector('input[name^="tName"]');
+
+          if (currentMonsterTypeSelect && currentMonsterAmountInput && currentMonsterTierInput && currentMonsterNameInput) {
+            const currentMonsterType = currentMonsterTypeSelect.value;
+            const currentMonsterAmount = parseInt(currentMonsterAmountInput.value, 10);
+            const currentMonsterTier = parseInt(currentMonsterTierInput.value, 10);
+            const currentMonsterName = currentMonsterNameInput.value || "Unnamed Adversary";
+
+            let monsterCost = 0; // Recalculate for output string
+            switch (currentMonsterType) {
+              case "BRUISER": monsterCost = 4; break;
+              case "HORDE": monsterCost = 2; break;
+              case "LEADER": monsterCost = 5; break;
+              case "MINION": monsterCost = 4; break;
+              case "RANGED": monsterCost = 2; break;
+              case "SKULKS": monsterCost = 1; break;
+              case "SOCIAL": monsterCost = 4; break;
+              case "SOLO": monsterCost = 5; break;
+              case "STANDARD": monsterCost = 2; break;
+              case "SUPPORT": monsterCost = 1; break;
+              default: monsterCost = 0;
+            }
+            let costForThisMonster = monsterCost * currentMonsterAmount;
+            outputContent += `Adversary: ${currentMonsterName} (Type: ${currentMonsterType}, Amount: ${currentMonsterAmount}, Tier: ${currentMonsterTier}) - Cost: ${costForThisMonster}<br>`;
+          }
+        });
+
+        if (lowerTierMonsterDetected) {
+          outputContent += `Note: At least one adversary is from a lower tier than the party. This adds +1.<br>`;
+        }
+        if (!specialMonsterDetected) {
+          outputContent += `Note: Since you are not using any Bruisers, Hordes, Leaders, or Solos, you gain +1.<br>`;
+        }
+        if (soloMonsterCount >= 2) {
+          outputContent += `Note: Includes 2 or more Solos. This subtracts 2 points.<br>`;
+        }
+        if (easierCheckbox && easierCheckbox.checked) {
+          outputContent += `Pre-condition: Easier / Shorter (-1).<br>`;
+        }
+        if (extraDamageCheckbox && extraDamageCheckbox.checked) {
+          outputContent += `Pre-condition: Add 1d4 (or +2) to adversary damage rolls (-2).<br>`;
+        }
+        if (harderCheckbox && harderCheckbox.checked) {
+          outputContent += `Pre-condition: Harder or longer fight (+2).<br>`;
+        }
+
+        outputContent += `<br>Total Monster Cost: ${totalMonsterCost}<br>`;
+        outputContent += `Remaining Points: ${finalRemainingPoints}<br>`; // Use finalRemainingPoints here
+
+        outputContent += "</div></article>";
+        calcTableElement.innerHTML = outputContent; // Update the main output
+      }
+    }
+
+  </script>
+</body>
+
+</html>
