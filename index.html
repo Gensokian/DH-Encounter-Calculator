@@ -304,7 +304,7 @@
 
           let enemiesToAdd = currentMonsterAmount;
           if (currentMonsterType === "MINION") {
-            enemiesToAdd = currentMonsterAmount * 4; // Special rule for minions
+            enemiesToAdd = currentMonsterAmount * players; // Special rule for minions
             hp = 1; 
           }
 
