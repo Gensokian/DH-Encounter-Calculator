@@ -2,39 +2,141 @@
 
 /* Sticky Points Info Box */
 #stickyPointsInfo {
-    position: fixed;
-    bottom: 20px; /* Adjust as needed */
-    right: 20px; /* Adjust as needed */
-    background-color: var(--pico-color-light); /* Darker background */
-    color: var(--pico-color-white); /* White text */
-    padding: 15px 20px;
-    border-radius: var(--pico-border-radius);
-    box-shadow: var(--pico-shadow-2x-up); /* Subtle shadow for depth */
-    font-size: 1.2em; /* Slightly larger text */
-    font-weight: bold;
-    z-index: 1000; /* Ensure it stays on top */
-    text-align: center;
-    min-width: 150px; /* Ensure it has a minimum width */
-    filter: drop-shadow(0px 0px 24px #46848a44);
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: var(--pico-color-light);
+  color: var(--pico-color-white);
+  padding: 15px 20px;
+  border-radius: var(--pico-border-radius);
+  box-shadow: var(--pico-shadow-2x-up);
+  font-size: 1.2em;
+  font-weight: bold;
+  z-index: 1000;
+  text-align: center;
+  min-width: 150px;
+  filter: drop-shadow(0px 0px 24px #46848a44);
 }
 
 #stickyPointsInfo b {
-    color: var(--pico-color-orange-200); /* Highlight the actual number */
+  color: var(--pico-color-orange-200);
 }
 
 /* Add to calculator.css */
 td input {
-    margin-bottom: 0 !important;
+  margin-bottom: 0 !important;
 }
 
 /* Stripe effect for the combat tracker table */
-#combatTrackerBody tr.stripe-1 td { /* TARGET CELLS INSIDE ROWS WITH stripe-1 class */
+#combatTrackerBody tr.stripe-1 td {
+  /* TARGET CELLS INSIDE ROWS WITH stripe-1 class */
   background-color: var(--pico-color-slate-50) !important;
 }
 
 /* Dark mode compatibility for the stripe effect */
 @media (prefers-color-scheme: dark) {
-  #combatTrackerBody tr.stripe-1 td { /* TARGET CELLS INSIDE ROWS WITH stripe-1 class */
+  #combatTrackerBody tr.stripe-1 td {
+    /* TARGET CELLS INSIDE ROWS WITH stripe-1 class */
     background-color: var(--pico-color-slate-700) !important;
   }
+}
+
+main.container {
+  margin-top: 5%;
+  padding: 1rem;
+  /* Add some padding for smaller screens */
+}
+
+/* Styling for each adversary row fieldset */
+fieldset[role="group"] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  border: 1px solid var(--pico-color-border);
+  padding: 1rem;
+  border-radius: var(--pico-border-radius);
+  position: relative;
+}
+
+/* Styling for labels within adversary rows */
+fieldset[role="group"] label {
+  flex: 1 1 calc(50% - 0.5rem);
+  min-width: 150px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Make labels stack on very small screens */
+@media (max-width: 600px) {
+  fieldset[role="group"] label {
+    flex: 1 1 100%;
+  }
+}
+
+/* Styling for the remove button */
+.remove-button {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  line-height: 1;
+  border-radius: var(--pico-border-radius);
+  z-index: 10;
+}
+
+/* Styling for the combat tracker table rows for better visual separation */
+.stripe-0 {
+  background-color: var(--pico-background-color);
+  /* Default background */
+}
+
+.stripe-1 {
+  background-color: var(--pico-color-neutral-100);
+
+  /* Slightly different background */
+  /* For dark mode */
+  @media (prefers-color-scheme: dark) {
+    background-color: var(--pico-color-neutral-800);
+  }
+}
+
+/* Ensure inputs within table cells are styled correctly */
+#combatTrackerBody input[type="number"] {
+  width: 80px;
+  /* Adjust width for HP/Stress inputs */
+  text-align: center;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--pico-border-radius);
+  border: 1px solid var(--pico-color-border);
+}
+
+/* Minion checkbox styling */
+#combatTrackerBody input[type="checkbox"] {
+  margin-right: 0.5rem;
+  vertical-align: middle;
+}
+
+/* Sticky points info box */
+#stickyPointsInfo {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  background-color: var(--pico-color-neutral-800);
+  color: var(--pico-color-neutral-50);
+  padding: 0.5rem 1rem;
+  border-radius: var(--pico-border-radius);
+  box-shadow: var(--pico-shadow);
+  z-index: 100;
+}
+
+#stickyPointsInfo b {
+  font-size: 1.2em;
 }
